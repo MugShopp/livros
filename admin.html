@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Estatísticas | Livros de Luciana Pereira</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+:root{--bg:#f4efe7;--paper:#fbf9f5;--ink:#202629;--muted:#6a7277;--accent:#9b5a3c;--accent-soft:#efe3da;--line:rgba(32,38,41,.12);--shadow:0 22px 50px rgba(42,36,31,.10)}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#faf7f2 0%,var(--bg) 100%);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}.wrap{width:min(1060px,calc(100% - 28px));margin:34px auto 52px}.top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:24px}.eyebrow{text-transform:uppercase;letter-spacing:.17em;font-size:.76rem;font-weight:800;color:var(--accent);margin-bottom:8px}h1,h2{font-family:Georgia,"Times New Roman",serif;margin:0;font-weight:500}h1{font-size:clamp(2.5rem,6vw,4.8rem);line-height:1.02}h2{font-size:1.45rem}p{color:var(--muted);margin:.45rem 0 0}button,input{font:inherit}button{border:0;border-radius:999px;padding:12px 18px;background:var(--ink);color:#fff;font-weight:800;cursor:pointer}button.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}.login{background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:var(--shadow);max-width:520px}label{display:block;font-size:.9rem;font-weight:700;margin-top:14px}input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:#fff;margin-top:6px}#msg{min-height:22px;font-size:.92rem}#dashboard{display:none}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 10px 30px rgba(42,36,31,.05)}.card .label{color:var(--muted);font-size:.9rem}.card .num{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:800;line-height:1;margin-top:10px}.panel{margin-top:18px;background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 10px 30px rgba(42,36,31,.05)}.list{margin-top:12px}.row{display:flex;justify-content:space-between;gap:18px;padding:14px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}.row span{color:var(--muted)}.row strong{font-size:1.08rem}.note{margin-top:16px;padding:14px 16px;background:var(--accent-soft);border-radius:16px;color:#68412f;font-size:.92rem}@media(max-width:760px){.top{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.wrap{margin-top:22px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top">
+<div><div class="eyebrow">Área administrativa</div><h1>Estatísticas dos livros</h1><p>Visitas à landing page e cliques nos botões que levam para a Amazon.</p></div>
+<button id="logout" class="secondary" style="display:none">Sair</button>
+</div>
+
+<section id="login" class="login">
+<h2>Entrar</h2><p>Use o usuário administrador criado no Supabase.</p>
+<label for="email">E-mail</label><input id="email" type="email" autocomplete="username">
+<label for="password">Senha</label><input id="password" type="password" autocomplete="current-password">
+<div style="margin-top:16px"><button id="loginBtn">Entrar</button></div><p id="msg"></p>
+</section>
+
+<section id="dashboard">
+<div class="grid">
+<div class="card"><div class="label">Visitas à página</div><div id="visits" class="num">0</div></div>
+<div class="card"><div class="label">Cliques na Amazon</div><div id="clicks" class="num">0</div></div>
+<div class="card"><div class="label">Taxa de clique</div><div id="ctr" class="num">0%</div></div>
+</div>
+
+<div class="panel"><h2>Cliques por livro</h2><div id="bookClicks" class="list"></div></div>
+<div class="panel"><h2>Outros cliques na Amazon</h2><div id="otherClicks" class="list"></div></div>
+<div class="note">O painel registra cliques nos botões da Amazon. Ele não consegue confirmar se a pessoa concluiu a compra dentro da Amazon.</div>
+</section>
+</div>
+
+<script>
+const cfg=window.LIVROS_STATS_CONFIG||{};
+const db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+const login=document.getElementById('login'),dashboard=document.getElementById('dashboard'),logout=document.getElementById('logout'),msg=document.getElementById('msg');
+
+function labelFor(name){
+ const labels={
+   vida_amazon:'A Vida Que Eles Me Deram',
+   kyara_amazon:'Kyara',
+   top_amazon:'Amazon no topo',
+   final_amazon:'Amazon no final',
+   hero_ver_amazon:'Amazon no topo (versão anterior)',
+   conhecer_livro:'A Vida Que Eles Me Deram (versão anterior)',
+   conhecer_kyara:'Kyara (versão anterior)',
+   final_ver_amazon:'Amazon no final (versão anterior)'
+ };
+ return labels[name]||name||'Outro botão';
+}
+
+async function loadStats(){
+ const {data,error}=await db.from('site_events').select('event_name,button_name');
+ if(error){msg.textContent='Não foi possível carregar as estatísticas.';return;}
+ const visits=data.filter(x=>x.event_name==='visit').length;
+ const clickEvents=data.filter(x=>x.event_name==='amazon_click');
+ const clicks=clickEvents.length;
+ document.getElementById('visits').textContent=visits;
+ document.getElementById('clicks').textContent=clicks;
+ document.getElementById('ctr').textContent=visits?((clicks/visits)*100).toFixed(1)+'%':'0%';
+ const counts={}; clickEvents.forEach(x=>counts[x.button_name]=(counts[x.button_name]||0)+1);
+ function renderRows(targetId,names){
+   const target=document.getElementById(targetId);
+   const rows=names.filter(n=>counts[n]).map(n=>`<div class="row"><span>${labelFor(n)}</span><strong>${counts[n]}</strong></div>`).join('');
+   target.innerHTML=rows||'<p>Ainda não houve cliques nesta área.</p>';
+ }
+ renderRows('bookClicks',['vida_amazon','conhecer_livro','kyara_amazon','conhecer_kyara']);
+ renderRows('otherClicks',['top_amazon','hero_ver_amazon','final_amazon','final_ver_amazon']);
+}
+
+async function refreshAuth(){
+ const {data:{session}}=await db.auth.getSession(); const signed=!!session;
+ login.style.display=signed?'none':'block'; dashboard.style.display=signed?'block':'none'; logout.style.display=signed?'inline-block':'none'; if(signed)loadStats();
+}
+document.getElementById('loginBtn').onclick=async()=>{
+ msg.textContent='Entrando...';
+ const email=document.getElementById('email').value.trim(),password=document.getElementById('password').value;
+ const {error}=await db.auth.signInWithPassword({email,password});
+ if(error){msg.textContent='E-mail ou senha incorretos.';return;}
+ msg.textContent='';refreshAuth();
+};
+logout.onclick=async()=>{await db.auth.signOut();refreshAuth();};
+db.auth.onAuthStateChange(()=>refreshAuth());
+refreshAuth();
+</script>
+</body>
+</html>
