@@ -1,0 +1,31 @@
+ATIVAÇÃO DAS ESTATÍSTICAS
+
+Arquivos:
+- index.html = landing page com contador de visitas e cliques
+- admin.html = painel privado
+- config.js = onde entram a URL e a chave pública do Supabase
+- supabase-setup.sql = cria a tabela e as regras de segurança
+- imagens dos livros
+
+O painel mede:
+1. Visitas à landing page (1 por sessão do navegador; atualizar a página não soma nova visita)
+2. Cliques em qualquer botão que leva à Amazon
+3. Taxa de clique
+4. Cliques separados por botão
+
+Para ativar:
+1. Crie um projeto gratuito no Supabase.
+2. Abra SQL Editor e execute supabase-setup.sql.
+3. Em Authentication > Users, crie seu usuário administrador (e-mail e senha).
+4. Em Project Settings/API, copie:
+   - Project URL
+   - anon/public key
+5. Cole os dois valores em config.js.
+6. Envie todos os arquivos para o GitHub Pages.
+7. Sua landing page ficará em /index.html.
+8. Seu painel ficará em /admin.html.
+
+SEGURANÇA
+O visitante pode inserir eventos, mas não consegue consultar a tabela.
+A leitura das estatísticas exige login pelo Supabase.
+A chave anon do Supabase pode ficar no navegador porque a proteção real é feita pelas regras RLS.
